@@ -65,6 +65,19 @@ namespace ZendeskApi_v2.Requests
             return GenericGet<GroupTicketResponse>(string.Format("{0}/show_many?ids={1}.json", _tickets, ids.ToCsv()));
         }
 
+        /// <summary>
+        /// This end-point is for bulk importing tickets. It will allow you to 
+        /// move data from legacy systems into Zendesk. We do not run triggers 
+        /// or the likes during bulk imports like these.
+        /// </summary>
+        public IndividualTicketResponse Import(TicketImport ticket)
+        {
+            var body = new {ticket};
+            return GenericPost<IndividualTicketResponse>(
+                String.Format("imports/{0}.json", _tickets),
+                body);
+        }
+
         public IndividualTicketResponse CreateTicket(Ticket ticket)
         {
             var body = new {ticket};

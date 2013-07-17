@@ -10,6 +10,7 @@ using ZendeskApi_v2;
 using ZendeskApi_v2.Models.Constants;
 using ZendeskApi_v2.Models.Shared;
 using ZendeskApi_v2.Models.Tickets;
+using ZendeskApi_v2.Models.Users;
 
 
 namespace Tests
@@ -145,6 +146,83 @@ namespace Tests
             Assert.AreEqual(updateResponse.Audit.Events.First().Body, body);
 
             Assert.True(api.Tickets.Delete(res.Id.Value));
+        }
+
+        protected User User(string userEmail)
+        {
+            var res = api.Users.SearchByEmail(userEmail);
+            if (res.Count > 0) return res.Users[0];
+
+            var user = new User()
+            {
+                Name = userEmail,
+                Email = userEmail,
+            };
+
+            return api.Users.CreateUser(user).User;
+        }
+
+        [Test]
+        public void CanImportTicket()
+        {
+            const string createdAt = "2000-01-01T12:34:56Z";
+            const string solvedAt = "2000-01-01T12:40:00Z";
+
+            var submitter = User("submitter@example.com");
+            var solver = User("solver@example.com");
+
+            var ticket = new TicketImport
+            {
+                Subject = "my printer is on fire",
+                Description = "HELP and other descriptive stuff",
+                Priority = TicketPriorities.Urgent,
+                CreatedAt = createdAt,
+                UpdatedAt = solvedAt,
+                SolvedAt = solvedAt,
+                Comments = new List<CommentImport>
+                {
+                    new CommentImport()
+                    {
+                        AuthorId = submitter.Id.Value,
+                        CreatedAt = createdAt,
+                        Public = false,
+                        Value = "HELP"
+                    },
+                    new CommentImport()
+                    {
+                        AuthorId = solver.Id.Value,
+                        CreatedAt = solvedAt,
+                        Public = false,
+                        Value = "Extinguished!"
+                    },
+                },
+            };
+
+            var res = api.Tickets.Import(ticket).Ticket;
+
+            Assert.NotNull(res);
+            Assert.Greater(res.Id, 0);
+            Assert.AreEqual(createdAt, res.CreatedAt);
+            Assert.AreEqual(solvedAt, res.UpdatedAt);
+
+            var audits = api.Tickets.GetAudits(res.Id.Value);
+
+            // 1st is ticket creation; 2nd is "HELP"; 3rd is "Extinguished!"
+            Assert.AreEqual(3, audits.Count);
+            AssertIsCommentAudit("HELP", submitter.Id, audits.Audits[1]);
+            AssertIsCommentAudit("Extinguished!", solver.Id, audits.Audits[2]);
+        }
+
+        private void AssertIsCommentAudit(
+            string expectedComment, 
+            long? expectedAuthorId, 
+            Audit audit)
+        {
+            Assert.AreEqual(1, audit.Events.Count);
+            var evnt = audit.Events[0];
+            Assert.AreEqual("Comment", evnt.Type);
+            Assert.AreEqual(expectedAuthorId, evnt.AuthorId);
+            Assert.AreEqual(expectedComment, evnt.Body);
         }
 
         [Test]

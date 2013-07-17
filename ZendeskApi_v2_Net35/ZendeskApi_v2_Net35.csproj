@@ -321,6 +321,9 @@
     <Compile Include="..\ZendeskApi_v2\Models\Tickets\Comment.cs">
       <Link>Models\Tickets\Comment.cs</Link>
     </Compile>
+    <Compile Include="..\ZenDeskApi_v2\Models\Tickets\CommentImport.cs">
+      <Link>Models\Tickets\CommentImport.cs</Link>
+    </Compile>
     <Compile Include="..\ZendeskApi_v2\Models\Tickets\Custom.cs">
       <Link>Models\Tickets\Custom.cs</Link>
     </Compile>
@@ -395,6 +398,9 @@
     </Compile>
     <Compile Include="..\ZendeskApi_v2\Models\Tickets\TicketField.cs">
       <Link>Models\Tickets\TicketField.cs</Link>
+    </Compile>
+    <Compile Include="..\ZenDeskApi_v2\Models\Tickets\TicketImport.cs">
+      <Link>Models\Tickets\TicketImport.cs</Link>
     </Compile>
     <Compile Include="..\ZendeskApi_v2\Models\Tickets\To.cs">
       <Link>Models\Tickets\To.cs</Link>
