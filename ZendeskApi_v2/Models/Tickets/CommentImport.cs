@@ -5,7 +5,7 @@ namespace ZendeskApi_v2.Models.Tickets
     public class CommentImport
     {
         [JsonProperty("author_id")]
-        public long AuthorId { get; set; }
+        public long? AuthorId { get; set; }
 
         [JsonProperty("value")]
         public string Value { get; set; }
