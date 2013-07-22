@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace ZendeskApi_v2.Models.Tickets
 {
@@ -15,5 +16,8 @@ namespace ZendeskApi_v2.Models.Tickets
 
         [JsonProperty("public")]
         public bool Public { get; set; }
+
+        [JsonProperty("uploads")]
+        public IList<string> Uploads { get; set; }
     }
 }
