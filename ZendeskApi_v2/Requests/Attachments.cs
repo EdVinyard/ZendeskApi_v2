@@ -22,21 +22,13 @@ namespace ZendeskApi_v2.Requests
             return UploadAttachment(file, "");
         }
 
-        public Upload UploadAttachments(List<ZenFile> files)
+        public Upload UploadAttachments(IEnumerable<ZenFile> files)
         {
-            if (files.Count < 1)
-                return null;
+            if (null == files) return null;
 
-            var res = UploadAttachment(files[0]);
-
-            if (files.Count > 1)
-            {
-                var otherFiles = files.Skip(1);
-                foreach (var curFile in otherFiles)
-                    res = UploadAttachment(curFile, res.Token);
-            }
-
-            return res;
+            return files.Aggregate<ZenFile, Upload>(
+                new Upload {Token = null},
+                (upload, file) => UploadAttachment(file, upload.Token));
         }
 
         /// <summary>
