@@ -16,7 +16,7 @@ namespace ZendeskApi_v2
         private const string XOnBehalfOfEmail = "X-On-Behalf-Of";        
         protected string User;
         protected string Password;
-        protected string ZendeskUrl;        
+        protected string ZendeskUrl;
 
         /// <summary>
         /// Constructor that uses BasicHttpAuthentication.
@@ -76,26 +76,51 @@ namespace ZendeskApi_v2
             req.Accept = "application/json, application/xml, text/json, text/x-json, text/javascript, text/xml";
             req.ContentLength = 0;
 
+            string bodyJson = null;
             if (body != null)
             {
-                var json = JsonConvert.SerializeObject(body, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
-                byte[] formData = UTF8Encoding.UTF8.GetBytes(json);
+                bodyJson = JsonConvert.SerializeObject(body, new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore });
+                byte[] formData = UTF8Encoding.UTF8.GetBytes(bodyJson);
                 req.ContentLength = formData.Length;
 
                 var dataStream = req.GetRequestStream();
                 dataStream.Write(formData, 0, formData.Length);
                 dataStream.Close();
             }
-            var res = req.GetResponse();
-            HttpWebResponse response = res as HttpWebResponse;
+
+            WebResponse res;
+            try
+            {
+                res = req.GetResponse();
+            }
+            catch (WebException exc)
+            {
+                Log(resource, requestMethod, body, bodyJson, ToRequestResult(exc));
+                throw;
+            }
+
+            HttpWebResponse response = (HttpWebResponse)res;
             var responseStream = response.GetResponseStream();
             var reader = new StreamReader(responseStream);
             string responseFromServer = reader.ReadToEnd();
 
-            return new RequestResult()
+            var result = new RequestResult()
             {
                 Content = responseFromServer,
                 HttpStatusCode = response.StatusCode
+            };
+            Log(resource, requestMethod, body, bodyJson, result);
+            return result;
+        }
+
+        private static RequestResult ToRequestResult(WebException exc)
+        {
+            var response = exc.Response as HttpWebResponse;
+            if (null == response) return null;
+            return new RequestResult()
+            {
+                Content = new StreamReader(response.GetResponseStream()).ReadToEnd(),
+                HttpStatusCode = response.StatusCode,
             };
         }
 
@@ -254,5 +279,31 @@ namespace ZendeskApi_v2
             return await res.ContinueWith(x => x.Result.HttpStatusCode == HttpStatusCode.OK);
         }
 #endif
+
+        #region Logging
+
+        public delegate void LogHandler(LogItem item);
+        public static LogHandler LogHandlers;
+
+        public static void Log(
+            string url,
+            string httpMethod,
+            object requestBody,
+            string requestBodyJson,
+            RequestResult response)
+        {
+            if (null == LogHandlers) return;
+
+            LogHandlers(new LogItem
+            {
+                Url = url,
+                HttpMethod = httpMethod,
+                RequestBody = requestBody,
+                RequestBodyJson = requestBodyJson,
+                Response = response,
+            });
+        }
+
+        #endregion
     }
 }
